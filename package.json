@@ -1,0 +1,28 @@
+{
+  "name": "git-diff",
+  "version": "1.0.0",
+  "description": "Web Component to show Git Diff ready to be emebedded in your project",
+  "main": "git-diff.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/katomaso/git-diff.git"
+  },
+  "keywords": [
+    "webcomponent",
+    "git",
+    "diff",
+    "polymer"
+  ],
+  "author": "Tomas Peterka",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/katomaso/git-diff/issues"
+  },
+  "homepage": "https://github.com/katomaso/git-diff#readme",
+  "dependencies": {
+    "lit-element": "^2.1.0"
+  }
+}
