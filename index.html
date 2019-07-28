@@ -3,7 +3,192 @@
 <head>
 	<meta charset="utf-8"/>
 	<title>Git Diff Component</title>
-	<script src="git-diff.js" type="module"></script>
+	<script src="dist/git-diff.js" type="module"></script>
+	<script>
+	console.log("Setting onload event");
+	window.addEventListener('load', (event) => {
+		console.log("onload trigerred");
+		customEvent = new CustomEvent("git-diff-set-data", {
+			detail: "diff --git a/src/git-diff.ts b/src/git-diff.ts\n\
+index 02f5874..acb6c2a 100644\n\
+--- a/src/git-diff.ts\n\
++++ b/src/git-diff.ts\n\
+@@ -1,145 +1,52 @@\n\
+ import {LitElement, html} from 'lit-element';\n\
+-\n\
+-enum DiffState {\n\
+-	START, END, FILE, FILE_DEL, FILE_ADD, FILE_MOD, HUNK_START, HUNK_END, LINE,\n\
+-}\n\
+-\n\
+-class Diff {\n\
+-	fileA : string = \"\";\n\
+-	fileB : string = \"\";\n\
+-	line : string = \"\";\n\
+-	state: DiffState;\n\
+-	hunkStart: number = -1;\n\
+-	hunkEnd: number = -1;\n\
+-	lines: Array<string> = new Array<string>();\n\
+-\n\
+-	constructor(state: DiffState) {\n\
+-		this.state = state;\n\
+-	}\n\
+-\n\
+-	setFiles(fileA: string, fileB: string) {\n\
+-		this.fileA = fileA;\n\
+-		this.fileB = fileB;\n\
+-	}\n\
+-\n\
+-	setLine(line: string) {\n\
+-		this.line = line;\n\
+-	}\n\
+-}\n\
++import {ChangeType, Diff, Hunk, parseDiff} from './git-diff-parser';\n\
+ \n\
+ \n\
+ export class GitDiff extends LitElement {\n\
+-	data: string;\n\
+-	diffs: Array<Diff> = new Array<Diff>();\n\
++	diffs: Array<Diff>;\n\
+ \n\
+ 	constructor() {\n\
+ 		super();\n\
+-		this.data = \"\";\n\
++		this.diffs = new Array<Diff>(0);\n\
+ 		document.addEventListener(\"git-diff-set-data\", this.onDiffChanged);\n\
+ 	}\n\
+ \n\
+ 	render() {\n\
+-		// return html`\n\
+-		// 	${this.diffs.map(diff => html`\n\
+-		// 		<input type=\"checkbox\" name=\"${diff.fileA}\">\n\
+-		// 		<summary>${diff.fileA} ${diff.status}</summary>\n\
+-		// 		<detail>\n\
+-		// 			<div class=\"diff-old\">\n\
+-		// 			</div>\n\
+-		// 			<div class=\"diff-new\">NEW</div>\n\
+-		// 		</detail>\n\
+-		// 	`)}\n\
+-		// `;\n\
+-		return html`AHOJ!`;\n\
++		return html`\n\
++			<style>\n\
++			detail {display: flex;}\n\
++			detail > div {flex: 1 auto;}\n\
++			</style>\n\
++\n\
++			${this.diffs.map(diff => html`\n\
++				<input type=\"checkbox\" name=\"${diff.fileA}\"><label>${diff.fileA}</label>\n\
++				${diff.hunks.map(hunk => `\n\
++						<summary>line ${hunk.startA} - ${hunk.startA + hunk.contextA}</summary>\n\
++					<detail>\n\
++						<div>ola!</div>\n\
++						<div>heja!</div>\n\
++					</detail>\n\
++				`)}\n\
++			`)}\n\
++		`;\n\
+ 	}\n\
+ \n\
+ 	static get properties() {\n\
+ 		return {\n\
+-			'diff': {type: String}\n\
++			'data': {type: String}\n\
+ 		}\n\
+ 	}\n\
+ \n\
+ 	onDiffChanged(evt: Event) {\n\
+ 		let event = <CustomEvent> evt;\n\
+ 		this.data = event.detail;\n\
+-		this.parseDiff();\n\
+-	}\n\
+-\n\
+-	parseDiff() {\n\
+-		var parser = new GitDiffParser(this.data);\n\
+-		let diff = parser.step();\n\
+-	}\n\
+-}\n\
+-\n\
+-\n\
+-\n\
+-\n\
+-class GitDiffParser {\n\
+-\n\
+-	diff: Array<string>;\n\
+-	curRow: number;\n\
+-	diffStartRe = /diff --git a\\/([\\w0-9_\\.]+) b\\/([\\w0-9_\\.]+)/;\n\
+-	fileChangeRe = /(\\w+) file mode \\d+/\n\
+-	constructor(diff: string) {\n\
+-		this.diff = diff.split(\"\\n\");\n\
+-		this.curRow = 0;\n\
+ 	}\n\
+ \n\
+-	step(): Diff {\n\
+-		if(this.curRow >= this.diff.length) return new Diff(DiffState.END);\n\
+-\n\
+-		let line = this.diff[this.curRow++];\n\
+-\n\
+-		if(this.diffStartRe.test(line)) {\n\
+-			let match = this.diffStartRe.exec(line);\n\
+-			console.log(match);\n\
+-			return new Diff(DiffState.FILE);\n\
+-		}\n\
+-		if(this.fileChangeRe.test(line)) {\n\
+-\n\
+-		}\n\
+-		return new Diff(DiffState.LINE);\n\
++	set data(value: string) 	{\n\
++		const oldValue = this.data;\n\
++		this.diffs = parseDiff(value);\n\
++		this.requestUpdate('data', oldValue);\n\
+ 	}\n\
+-\n\
+ }\n\
+ \n\
+ customElements.define('git-diff', GitDiff);\n\
+-\n\
+-/**\n\
+-Example output that needs to be parsed correctly\n\
+-\n\
+-git add .\n\
+-git status --porcelain\n\
+-D  git-diff.js\n\
+-D  git-diff.ts\n\
+-M  package-lock.json\n\
+-M  package.json\n\
+-A  src/git-diff.js\n\
+-\n\
+-git diff --no-color --staged\n\
+-diff --git a/git-diff.js b/git-diff.js\n\
+-deleted file mode 100644\n\
+-index 6a9d36f..0000000\n\
+---- a/git-diff.js\n\
+-+++ /dev/null\n\
+-@@ -1,47 +0,0 @@\n\
+--\"use strict\";\n\
+--var __extends = (this && this.__extends) || (function () {\n\
+--    var extendStatics = function (d, b) {}}\n\
+--customElements.define('git-diff', GitDiff);\n\
+-\\ No newline at end of file\n\
+-diff --git a/package-lock.json b/package-lock.json\n\
+-index d9b3de9..becb6be 100644\n\
+---- a/package-lock.json\n\
+-+++ b/package-lock.json\n\
+-@@ -4,18 +4,3530 @@\n\
+-   \"lockfileVersion\": 1,\n\
+-   \"requires\": true,\n\
+-   \"dependencies\": {\n\
+-+      \"requires\": {\n\
+-+        \"@webassemblyjs/helper-module-context\": \"1.8.5\",\n\
+-+        \"@webassemblyjs/helper-wasm-bytecode\": \"1.8.5\",\n\
+-+        \"@webassemblyjs/wast-parser\": \"1.8.5\"\n\
+-+      }\n\
+-+    },\n\
+-*/\n\
+\\ No newline at end of file"
+		});
+		window.dispatchEvent(customEvent);
+	});
+	</script>
 </head>
 <body>
 	<git-diff/>

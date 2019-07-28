@@ -24,5 +24,9 @@
   "homepage": "https://github.com/katomaso/git-diff#readme",
   "dependencies": {
     "lit-element": "^2.1.0"
+  },
+  "devDependencies": {
+    "webpack": "^4.32.2",
+    "webpack-cli": "^3.3.2"
   }
 }
