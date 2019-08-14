@@ -9,6 +9,21 @@ export enum ChangeType {
 	ADD, DEL, MOD, NADA
 }
 
+export class Line {
+	type: ChangeType;
+	data: string;
+	nr: number;
+
+	constructor(data: string, nr: number) {
+		if(!data || data.charAt(0) == " ") this.type = ChangeType.NADA;
+		else if(data.charAt(0) == "-") this.type = ChangeType.DEL;
+		else if(data.charAt(0) == "+") this.type = ChangeType.ADD;
+		this.data = data;
+		this.nr = nr;
+	}
+	isContext(): boolean {return this.type == ChangeType.NADA;}
+}
+
 export class Hunk {
 	startA: number;
 	startB: number;
@@ -16,18 +31,18 @@ export class Hunk {
 	contextB: number;
 	indexA: number;  // current index in linesA array (linesA.length returns size)
 	indexB: number;
-	linesA: Array<string>;
-	linesB: Array<string>;
+	linesA: Array<Line>;
+	linesB: Array<Line>;
 
 	constructor(startA: number, contextA: number, startB: number, contextB: number) {
 		this.startA = startA;
 		this.contextA = contextA;
-		this.indexA = 0;
 		this.startB = startB;
 		this.contextB = contextB;
-		this.indexB = 0;
-		this.linesA = new Array<string|null>(contextA);
-		this.linesB = new Array<string|null>(contextB);
+		this.indexA = startA; // line index in the file (paddings don't count)
+		this.indexB = startB; // line index in the file (paddings don't count)
+		this.linesA = new Array<Line>();
+		this.linesB = new Array<Line>();
 	}
 
 	addLine(state: ChangeType, content: string) {
@@ -37,17 +52,49 @@ export class Hunk {
 			this.addLineB(content);
 		} else {
 			// push the context line to both and pad empty space
-			let maxIndex =  Math.max(this.indexA, this.indexB);
-			while(this.indexA < maxIndex) this.addLineA(""); // pad left with empty lines
-			while(this.indexB < maxIndex) this.addLineB(""); // pad right with empty lines
+			let maxLen =  Math.max(this.linesA.length, this.linesA.length);
+			while(this.linesA.length < maxLen) this.addLineA(null); // pad left with empty lines
+			while(this.linesB.length < maxLen) this.addLineB(null); // pad right with empty lines
 			this.addLineA(content);
 			this.addLineB(content);
 		}
 	}
-	addLineA(value : string|null){this.linesA[this.indexA++] = value;}
-	addLineB(value : string|null){this.linesB[this.indexB++] = value;}
-	getLeft() : string {return this.linesA.join("\n"); }
-	getRight() : string {return this.linesB.join("\n"); }
+	addLineA(value : string|null){
+		if(value === null) {
+			this.linesA.push(new Line("", NaN));
+		} else {
+			this.linesA.push(new Line(value, this.startA + this.indexA));
+			this.indexA++;
+		}
+	}
+	addLineB(value : string|null){
+		if(value === null) {
+			this.linesB.push(new Line("", NaN));
+		} else {
+			this.linesB.push(new Line(value, this.startB + this.indexB));
+			this.indexB++;
+		}
+	}
+	// clusters(lines: Array<string>) {
+	// 	let clusters = new Array<Cluster>();
+	// 	let cluster;
+	// 	let lastSign = " ", curSign = " ";
+	// 	for (let line of lines) {
+	// 		if(line === undefined || line === null) continue;
+	// 		if(line.length == 0) curSign = " ";
+	// 		else curSign = line.charAt(0);
+	// 		if(cluster == null) {cluster = new Cluster(curSign, line);}
+	// 		if(curSign != lastSign) {
+	// 			clusters.push(cluster);
+	// 			cluster = new Cluster(curSign, line);
+	// 		} else {
+	// 			cluster.addLine(line);
+	// 		}
+	// 	}
+	// 	return clusters;
+	// }
+	getDeletions() {return this.linesA;}
+	getAdditions() {return this.linesB;}
 }
 
 export class Diff {
@@ -89,13 +136,11 @@ export function parseDiff(diff: string) : Array<Diff> {
 		// start a new diff
 		if(diffStartRe.test(line)) {
 			let match = diffStartRe.exec(line);
-			console.log(match);
 			if(curDiff != null) { diffs.push(curDiff); }
 			curDiff = new Diff(match[1], match[2]);
 		}
 		else if(fileChangeRe.test(line)) {
 			let match = fileChangeRe.exec(line);
-			console.log(match);
 			if(match[1] == "deleted") curDiff.setState(ChangeType.DEL);
 			else if(match[1] == "new") curDiff.setState(ChangeType.ADD);
 			else if(match[1] == "modified") curDiff.setState(ChangeType.MOD);

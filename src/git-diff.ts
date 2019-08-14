@@ -1,5 +1,5 @@
 import {LitElement, html, property} from 'lit-element';
-import {ChangeType, Diff, Hunk, parseDiff} from './git-diff-parser';
+import {Diff, Hunk, parseDiff} from './git-diff-parser';
 
 
 export class GitDiff extends LitElement {
@@ -14,8 +14,11 @@ export class GitDiff extends LitElement {
 	render() {
 		return html`
 			<style>
-			div {display: flex;}
-			div > pre {flex: 1 auto;}
+				div {display: flex;}
+				div > div {flex: 1 auto;}
+				span {display: block;}
+				span.add {background-color: #cfc;}
+				span.del {background-color: #fcc;}
 			</style>
 
 			${this.diffs.map(diff => html`
@@ -23,8 +26,14 @@ export class GitDiff extends LitElement {
 				${diff.hunks.map(hunk => html`
 					<strong>line ${hunk.startA} - ${hunk.startA + hunk.contextA}</strong>
 					<div>
-						<pre>${hunk.getLeft()}</pre>
-						<pre>${hunk.getRight()}</pre>
+						<div>${hunk.getDeletions().map(line => html`
+							<span ${line.isContext() ? html`class="del"` : html``}><i>${line.nr}</i>${line.data}</span>
+							`)}
+						</div>
+						<div>${hunk.getAdditions().map(line => html`
+							<span ${line.isContext() ? html`class="add"` : html``}><i>${line.nr}</i>${line.data}</span>
+							`)}
+						</div>
 					</div>
 				`)}
 			`)}
