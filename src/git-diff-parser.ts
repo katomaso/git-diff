@@ -22,6 +22,7 @@ export class Line {
 		this.nr = nr;
 	}
 	isContext(): boolean {return this.type == ChangeType.NADA;}
+	printNr(): string {if(Number.isNaN(this.nr)) return ""; else return this.nr.toString(); }
 }
 
 export class Hunk {
@@ -75,24 +76,6 @@ export class Hunk {
 			this.indexB++;
 		}
 	}
-	// clusters(lines: Array<string>) {
-	// 	let clusters = new Array<Cluster>();
-	// 	let cluster;
-	// 	let lastSign = " ", curSign = " ";
-	// 	for (let line of lines) {
-	// 		if(line === undefined || line === null) continue;
-	// 		if(line.length == 0) curSign = " ";
-	// 		else curSign = line.charAt(0);
-	// 		if(cluster == null) {cluster = new Cluster(curSign, line);}
-	// 		if(curSign != lastSign) {
-	// 			clusters.push(cluster);
-	// 			cluster = new Cluster(curSign, line);
-	// 		} else {
-	// 			cluster.addLine(line);
-	// 		}
-	// 	}
-	// 	return clusters;
-	// }
 	getDeletions() {return this.linesA;}
 	getAdditions() {return this.linesB;}
 }

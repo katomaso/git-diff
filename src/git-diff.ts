@@ -14,27 +14,28 @@ export class GitDiff extends LitElement {
 	render() {
 		return html`
 			<style>
-				div {display: flex;}
-				div > div {flex: 1 auto;}
+				detail {display: flex;}
+				detail > div {flex: 1 auto; overflow: scroll;}
+				i {display: inline-block; width: 2em;}
 				span {display: block;}
-				span.add {background-color: #cfc;}
-				span.del {background-color: #fcc;}
+				.add {background-color: #cfc;}
+				.del {background-color: #fcc;}
 			</style>
 
 			${this.diffs.map(diff => html`
 				<input type="checkbox" name="${diff.fileA}"><label>${diff.fileA}</label>
 				${diff.hunks.map(hunk => html`
-					<strong>line ${hunk.startA} - ${hunk.startA + hunk.contextA}</strong>
-					<div>
+					<summary>line ${hunk.startA} - ${hunk.startA + hunk.contextA}</summary>
+					<detail>
 						<div>${hunk.getDeletions().map(line => html`
-							<span ${line.isContext() ? html`class="del"` : html``}><i>${line.nr}</i>${line.data}</span>
+							<span><i>${line.printNr()}</i>${line.data}</span>
 							`)}
 						</div>
 						<div>${hunk.getAdditions().map(line => html`
-							<span ${line.isContext() ? html`class="add"` : html``}><i>${line.nr}</i>${line.data}</span>
+							<span><i>${line.printNr()}</i>${line.data}</span>
 							`)}
 						</div>
-					</div>
+					</detail>
 				`)}
 			`)}
 		`;
