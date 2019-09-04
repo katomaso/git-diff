@@ -25,27 +25,23 @@ export class Line {
 	printNr(): string {if(Number.isNaN(this.nr)) return ""; else return this.nr.toString(); }
 }
 
+
 export class Hunk {
 	startA: number;
 	startB: number;
-	contextA: number;
-	contextB: number;
 	indexA: number;  // current index in linesA array (linesA.length returns size)
 	indexB: number;
 	linesA: Array<Line>;
 	linesB: Array<Line>;
 
-	constructor(startA: number, contextA: number, startB: number, contextB: number) {
+	constructor(startA: number, startB: number) {
 		this.startA = startA;
-		this.contextA = contextA;
 		this.startB = startB;
-		this.contextB = contextB;
 		this.indexA = startA; // line index in the file (paddings don't count)
 		this.indexB = startB; // line index in the file (paddings don't count)
 		this.linesA = new Array<Line>();
 		this.linesB = new Array<Line>();
 	}
-
 	addLine(state: ChangeType, content: string) {
 		if(state == ChangeType.DEL) {
 			this.addLineA(content);
@@ -60,24 +56,44 @@ export class Hunk {
 			this.addLineB(content);
 		}
 	}
-	addLineA(value : string|null){
+	addLineA(value : Line|string|null){
 		if(value === null) {
 			this.linesA.push(new Line("", NaN));
+		} else if (value instanceof Line) {
+			this.linesA.push(value);
 		} else {
 			this.linesA.push(new Line(value, this.startA + this.indexA));
 			this.indexA++;
 		}
 	}
-	addLineB(value : string|null){
+	addLineB(value : Line|string|null){
 		if(value === null) {
 			this.linesB.push(new Line("", NaN));
+		} else if (value instanceof Line) {
+			this.linesB.push(value);
 		} else {
 			this.linesB.push(new Line(value, this.startB + this.indexB));
 			this.indexB++;
 		}
 	}
+	hasLines() {return this.indexA > this.startA || this.indexB > this.startB;}
 	getDeletions() {return this.linesA;}
 	getAdditions() {return this.linesB;}
+	splits(): Array<Hunk> {
+		var splits = new Array<Hunk>();
+		let hunk = new Hunk(this.startA, this.startB);
+		let li = this.linesA.length-1;
+		for(let i=0; i<=this.linesA.length; i++) {
+			// start a new hunk only if there is something in the current one and the next line is either deletion or addition
+			if(hunk.hasLines() && i != li && (this.linesA[i+1].type != ChangeType.NADA || this.linesB[i+1].type != ChangeType.NADA)) {
+				splits.push(hunk);
+				hunk = new Hunk(hunk.indexA, hunk.indexB);
+			}
+			hunk.addLineA(this.linesA[i]);
+			hunk.addLineB(this.linesB[i]);
+		}
+		return splits;
+	}
 }
 
 export class Diff {
@@ -94,12 +110,16 @@ export class Diff {
 	}
 
 	setState(state: ChangeType) { this.state = state; }
-	startHunk(startA: number, contextA: number, startB: number, contextB: number) {
-		this.hunks.push(new Hunk(startA, contextA, startB, contextB));
+	startHunk(startA: number, startB: number) {
+		this.hunks.push(new Hunk(startA, startB));
 	}
 	addLine(state: ChangeType, content: string) {
 		let curHunk = this.hunks[this.hunks.length-1];
 		curHunk.addLine(state, content);
+	}
+	getFilePath(): string {
+		if(this.fileA && !this.fileA.startsWith("/dev/null")) return this.fileA;
+		else return this.fileB;
 	}
 }
 
@@ -132,7 +152,7 @@ export function parseDiff(diff: string) : Array<Diff> {
 		else if(realFileARe.test(line) || realFileBRe.test(line)) { continue; }
 		else if(curDiff.state != ChangeType.DEL && hunkStartRe.test(line)) {
 			let match = hunkStartRe.exec(line);
-			curDiff.startHunk(Number(match[1]), Number(match[2]), Number(match[3]), Number(match[4]));
+			curDiff.startHunk(Number(match[1]), Number(match[3]));
 		}
 		else { // it is a line
 			if(curDiff.state == ChangeType.DEL) continue; // do not show the content of deleted files

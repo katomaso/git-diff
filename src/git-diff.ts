@@ -14,28 +14,36 @@ export class GitDiff extends LitElement {
 	render() {
 		return html`
 			<style>
-				detail {display: flex;}
-				detail > div {flex: 1 auto; overflow: scroll;}
+				.header {background-color: #def; font-weight: bold; font-size: 13pt;}
+				.hunk {display: flex;}
+				.hunk > div {flex: 1 auto; overflow: scroll;}
 				i {display: inline-block; width: 2em;}
-				span {display: block;}
-				.add {background-color: #cfc;}
-				.del {background-color: #fcc;}
+				span {display: block; font-family: Liberation mono,monospace; font-size: 10pt;}
+				.add {background-color: #dfd;}
+				.del {background-color: #fdd;
 			</style>
 
 			${this.diffs.map(diff => html`
-				<input type="checkbox" name="${diff.fileA}"><label>${diff.fileA}</label>
+				<div class="header"><input type="checkbox" name="${diff.getFilePath()}"><label>${diff.getFilePath()}</label></div>
 				${diff.hunks.map(hunk => html`
-					<summary>line ${hunk.startA} - ${hunk.startA + hunk.contextA}</summary>
-					<detail>
-						<div>${hunk.getDeletions().map(line => html`
-							<span><i>${line.printNr()}</i>${line.data}</span>
+					<div class="hunk">
+					${hunk.splits().map(split => html`
+						<div>${split.getDeletions().map(line => html`
+							${line.isContext() ?
+								html`<span><i>${line.printNr()}</i>${line.data}</span>` :
+								html`<span class="del"><i>${line.printNr()}</i>${line.data}</span>`
+							    }
 							`)}
 						</div>
-						<div>${hunk.getAdditions().map(line => html`
-							<span><i>${line.printNr()}</i>${line.data}</span>
+						<div>${split.getAdditions().map(line => html`
+							${line.isContext() ?
+								html`<span><i>${line.printNr()}</i>${line.data}</span>` :
+								html`<span class="add"><i>${line.printNr()}</i>${line.data}</span>`
+							    }
 							`)}
 						</div>
-					</detail>
+					</div>
+					`)}
 				`)}
 			`)}
 		`;
