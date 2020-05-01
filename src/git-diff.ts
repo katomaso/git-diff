@@ -24,26 +24,25 @@ export class GitDiff extends LitElement {
 			</style>
 
 			${this.diffs.map(diff => html`
-				<div class="header"><input type="checkbox" name="${diff.getFilePath()}"><label>${diff.getFilePath()}</label></div>
 				${diff.hunks.map(hunk => html`
-					<div class="hunk">
-					${hunk.splits().map(split => html`
-						<div>${split.getDeletions().map(line => html`
-							${line.isContext() ?
-								html`<span><i>${line.printNr()}</i>${line.data}</span>` :
-								html`<span class="del"><i>${line.printNr()}</i>${line.data}</span>`
-							    }
-							`)}
-						</div>
-						<div>${split.getAdditions().map(line => html`
-							${line.isContext() ?
-								html`<span><i>${line.printNr()}</i>${line.data}</span>` :
-								html`<span class="add"><i>${line.printNr()}</i>${line.data}</span>`
-							    }
-							`)}
+					<div class="header"><input type="checkbox" name="${diff.getFilePath()}"><label>${diff.getFilePath()}</label></div>
+						<div class="hunk">
+							<div>${hunk.getDeletions().map(line => html`
+								${line.isContext() ?
+									html`<span><i>${line.printNr()}</i>${line.data}</span>` :
+									html`<span class="del"><i>${line.printNr()}</i>${line.data}</span>`
+								    }
+								`)}
+							</div>
+							<div>${hunk.getAdditions().map(line => html`
+								${line.isContext() ?
+									html`<span><i>${line.printNr()}</i>${line.data}</span>` :
+									html`<span class="add"><i>${line.printNr()}</i>${line.data}</span>`
+								    }
+								`)}
+							</div>
 						</div>
 					</div>
-					`)}
 				`)}
 			`)}
 		`;

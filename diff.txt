@@ -1,0 +1,176 @@
+diff --git a/src/git-diff.ts b/src/git-diff.ts
+index 02f5874..acb6c2a 100644
+--- a/src/git-diff.ts
++++ b/src/git-diff.ts
+@@ -1,145 +1,52 @@
+ import {LitElement, html} from 'lit-element';
+-
+-enum DiffState {
+-	START, END, FILE, FILE_DEL, FILE_ADD, FILE_MOD, HUNK_START, HUNK_END, LINE,
+-}
+-
+-class Diff {
+-	fileA : string = "";
+-	fileB : string = "";
+-	line : string = "";
+-	state: DiffState;
+-	hunkStart: number = -1;
+-	hunkEnd: number = -1;
+-	lines: Array<string> = new Array<string>();
+-
+-	constructor(state: DiffState) {
+-		this.state = state;
+-	}
+-
+-	setFiles(fileA: string, fileB: string) {
+-		this.fileA = fileA;
+-		this.fileB = fileB;
+-	}
+-
+-	setLine(line: string) {
+-		this.line = line;
+-	}
+-}
++import {ChangeType, Diff, Hunk, parseDiff} from './git-diff-parser';
+ 
+ 
+ export class GitDiff extends LitElement {
+-	data: string;
+-	diffs: Array<Diff> = new Array<Diff>();
++	diffs: Array<Diff>;
+ 
+ 	constructor() {
+ 		super();
+-		this.data = "";
++		this.diffs = new Array<Diff>(0);
+ 		document.addEventListener("git-diff-set-data", this.onDiffChanged);
+ 	}
+ 
+ 	render() {
+-		// return html`
+-		// 	${this.diffs.map(diff => html`
+-		// 		<input type="checkbox" name="${diff.fileA}">
+-		// 		<summary>${diff.fileA} ${diff.status}</summary>
+-		// 		<detail>
+-		// 			<div class="diff-old">
+-		// 			</div>
+-		// 			<div class="diff-new">NEW</div>
+-		// 		</detail>
+-		// 	`)}
+-		// `;
+-		return html`AHOJ!`;
++		return html`
++			<style>
++			detail {display: flex;}
++			detail > div {flex: 1 auto;}
++			</style>
++
++			${this.diffs.map(diff => html`
++				<input type="checkbox" name="${diff.fileA}"><label>${diff.fileA}</label>
++				${diff.hunks.map(hunk => `
++						<summary>line ${hunk.startA} - ${hunk.startA + hunk.contextA}</summary>
++					<detail>
++						<div>ola!</div>
++						<div>heja!</div>
++					</detail>
++				`)}
++			`)}
++		`;
+ 	}
+ 
+ 	static get properties() {
+ 		return {
+-			'diff': {type: String}
++			'data': {type: String}
+ 		}
+ 	}
+ 
+ 	onDiffChanged(evt: Event) {
+ 		let event = <CustomEvent> evt;
+ 		this.data = event.detail;
+-		this.parseDiff();
+-	}
+-
+-	parseDiff() {
+-		var parser = new GitDiffParser(this.data);
+-		let diff = parser.step();
+-	}
+-}
+-
+-
+-
+-
+-class GitDiffParser {
+-
+-	diff: Array<string>;
+-	curRow: number;
+-	diffStartRe = /diff --git a\/([\w0-9_\.]+) b\/([\w0-9_\.]+)/;
+-	fileChangeRe = /(\w+) file mode \d+/
+-	constructor(diff: string) {
+-		this.diff = diff.split("\n");
+-		this.curRow = 0;
+ 	}
+ 
+-	step(): Diff {
+-		if(this.curRow >= this.diff.length) return new Diff(DiffState.END);
+-
+-		let line = this.diff[this.curRow++];
+-
+-		if(this.diffStartRe.test(line)) {
+-			let match = this.diffStartRe.exec(line);
+-			console.log(match);
+-			return new Diff(DiffState.FILE);
+-		}
+-		if(this.fileChangeRe.test(line)) {
+-
+-		}
+-		return new Diff(DiffState.LINE);
++	set data(value: string) 	{
++		const oldValue = this.data;
++		this.diffs = parseDiff(value);
++		this.requestUpdate('data', oldValue);
+ 	}
+-
+ }
+ 
+ customElements.define('git-diff', GitDiff);
+-
+-/**
+-Example output that needs to be parsed correctly
+-
+-git add .
+-git status --porcelain
+-D  git-diff.js
+-D  git-diff.ts
+-M  package-lock.json
+-M  package.json
+-A  src/git-diff.js
+-
+-git diff --no-color --staged
+-diff --git a/git-diff.js b/git-diff.js
+-deleted file mode 100644
+-index 6a9d36f..0000000
+---- a/git-diff.js
+-+++ /dev/null
+-@@ -1,47 +0,0 @@
+--"use strict";
+--var __extends = (this && this.__extends) || (function () {
+--    var extendStatics = function (d, b) {}}
+--customElements.define('git-diff', GitDiff);
+-\ No newline at end of file
+-diff --git a/package-lock.json b/package-lock.json
+-index d9b3de9..becb6be 100644
+---- a/package-lock.json
+-+++ b/package-lock.json
+-@@ -4,18 +4,3530 @@
+-   "lockfileVersion": 1,
+-   "requires": true,
+-   "dependencies": {
+-+      "requires": {
+-+        "@webassemblyjs/helper-module-context": "1.8.5",
+-+        "@webassemblyjs/helper-wasm-bytecode": "1.8.5",
+-+        "@webassemblyjs/wast-parser": "1.8.5"
+-+      }
+-+    },
+-*/
+\ No newline at end of file

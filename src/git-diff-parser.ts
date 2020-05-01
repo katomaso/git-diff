@@ -79,21 +79,6 @@ export class Hunk {
 	hasLines() {return this.indexA > this.startA || this.indexB > this.startB;}
 	getDeletions() {return this.linesA;}
 	getAdditions() {return this.linesB;}
-	splits(): Array<Hunk> {
-		var splits = new Array<Hunk>();
-		let hunk = new Hunk(this.startA, this.startB);
-		let li = this.linesA.length-1;
-		for(let i=0; i<=this.linesA.length; i++) {
-			// start a new hunk only if there is something in the current one and the next line is either deletion or addition
-			if(hunk.hasLines() && i != li && (this.linesA[i+1].type != ChangeType.NADA || this.linesB[i+1].type != ChangeType.NADA)) {
-				splits.push(hunk);
-				hunk = new Hunk(hunk.indexA, hunk.indexB);
-			}
-			hunk.addLineA(this.linesA[i]);
-			hunk.addLineB(this.linesB[i]);
-		}
-		return splits;
-	}
 }
 
 export class Diff {
